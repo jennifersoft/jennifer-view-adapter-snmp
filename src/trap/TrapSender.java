@@ -109,7 +109,7 @@ public class TrapSender extends Thread {
             snmp.close();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LogUtil.error(e.getMessage());
         }
     }
 
@@ -125,7 +125,7 @@ public class TrapSender extends Thread {
                 sendMsg();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LogUtil.error(e.getMessage());
         }
     }
 
