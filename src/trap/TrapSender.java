@@ -11,6 +11,7 @@ import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
+import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.IpAddress;
 import org.snmp4j.smi.OID;
@@ -103,7 +104,10 @@ public class TrapSender extends Thread {
                     pdu.setType(PDU.NOTIFICATION);
 
                     // Send the PDU
-                    snmp.send(pdu, cTarget);
+                    ResponseEvent res = snmp.send(pdu, cTarget);
+
+                    // Logging event messages
+                    LogUtil.info(res.toString() + " (" + i + "/" + dataCount + ")");
                 }
             }
             snmp.close();

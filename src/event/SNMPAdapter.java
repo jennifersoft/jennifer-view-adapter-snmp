@@ -12,6 +12,7 @@ import java.text.SimpleDateFormat;
 
 public class SNMPAdapter implements JenniferAdapter {
 	public void on(JenniferModel[] message) {
+		LogUtil.info(message.length + " events are transmitted.");
 		SNMPProp prop = SNMPConfig.getLog();
 
 		try {
