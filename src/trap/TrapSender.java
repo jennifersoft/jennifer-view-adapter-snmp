@@ -11,7 +11,6 @@ import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
-import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.IpAddress;
 import org.snmp4j.smi.OID;
@@ -23,115 +22,89 @@ import prop.SNMPProp;
 import util.SNMPConfig;
 
 public class TrapSender extends Thread {
+    private Vector<Map<String, String>> queue = new Vector();
+    private SNMPProp properties;
 
-    private long startTime = System.currentTimeMillis();
-    private static TrapSender trapSender = null;
-    private static Vector<Map<String, String>> queue = new Vector();
-
-    private TransportMapping transport;
-
-    private TrapSender() {}
-
-    public static TrapSender getInstance() {
-        if (trapSender == null) {
-            trapSender = new TrapSender();
-            trapSender.start();
-        }
-
-        return trapSender;
+    public TrapSender(SNMPProp properties) {
+        this.properties = properties;
     }
 
-    public void sendMsg() throws InterruptedException {
-        SNMPProp prop = SNMPConfig.getLog();
-        Vector v = queue;
-        queue = new Vector();
+    private void sendAll() throws IOException {
+        String snmpTrapTargetAddress = properties.getTrapTargetAddress();
 
-        String snmpTrapTargetAddress = prop.getTrapTargetAddress();
-        String community = prop.getTrapTargetCommunity();
+        TransportMapping transport = new DefaultUdpTransportMapping();
+        transport.listen();
 
-        if (snmpTrapTargetAddress == null) {
-            if (System.currentTimeMillis() - startTime > 10000) {
-                LogUtil.error("SNMP Trap Target Address is not configured.");
-                startTime = System.currentTimeMillis();
+        // Create Target
+        CommunityTarget cTarget = new CommunityTarget();
+        cTarget.setCommunity(new OctetString(properties.getTrapTargetCommunity()));
+        cTarget.setVersion(SnmpConstants.version2c);
+        cTarget.setAddress(new UdpAddress(snmpTrapTargetAddress));
+        cTarget.setRetries(0);
+        cTarget.setTimeout(5000);
+
+        // Create PDU for
+        for (int i = 0; i < queue.size(); i++) {
+            Map<String, String> obj = queue.get(i);
+            String level = obj.get("level");
+            String message = obj.get("message");
+            String trapOid = null;
+
+            if(level == "FATAL") {
+                trapOid = properties.getTrapOidFatal();
+            } else if(level == "WARNING") {
+                trapOid = properties.getTrapOidWarning();
+            } else if(level == "NORMAL") {
+                trapOid = properties.getTrapOidNormal();
             }
-            return;
-        }
 
-        // Create Transport Mapping
-        try {
-            // Create Target
-            CommunityTarget cTarget = new CommunityTarget();
-            cTarget.setCommunity(new OctetString(community));
-            cTarget.setVersion(SnmpConstants.version2c);
-            cTarget.setAddress(new UdpAddress(snmpTrapTargetAddress));
-            cTarget.setRetries(0);
-            cTarget.setTimeout(5000);
-            Snmp snmp = new Snmp(transport);
+            if(trapOid != null) {
+                // Logging trapOid
+                LogUtil.info("Sending SNMP Trap OID (" + trapOid + ")");
 
-            // Create PDU for
-            int dataCount = v.size();
-            for (int i = 0; i < dataCount; i++) {
                 PDU pdu = new PDU();
-                Map<String, String> obj = (Map<String, String>) v.get(i);
+                pdu.add(new VariableBinding(SnmpConstants.sysUpTime,
+                        new OctetString(new Date().toString())));
+                pdu.add(new VariableBinding(SnmpConstants.snmpTrapOID, new OID(
+                        trapOid)));
+                pdu.add(new VariableBinding(SnmpConstants.snmpTrapAddress,
+                        new IpAddress(snmpTrapTargetAddress.split("/")[0])));
 
-                String level = obj.get("level");
-                String message = obj.get("message");
-                String trapOid = null;
+                pdu.add(new VariableBinding(new OID(trapOid), new OctetString(message)));
+                pdu.setType(PDU.NOTIFICATION);
 
-                if(level == "FATAL") {
-                    trapOid = prop.getTrapOidFatal();
-                } else if(level == "WARNING") {
-                    trapOid = prop.getTrapOidWarning();
-                } else if(level == "NORMAL") {
-                    trapOid = prop.getTrapOidNormal();
-                }
-
-                if(trapOid != null) {
-                    // need to specify the system up time
-                    pdu.add(new VariableBinding(SnmpConstants.sysUpTime,
-                            new OctetString(new Date().toString())));
-                    pdu.add(new VariableBinding(SnmpConstants.snmpTrapOID, new OID(
-                            trapOid)));
-                    pdu.add(new VariableBinding(SnmpConstants.snmpTrapAddress,
-                            new IpAddress(snmpTrapTargetAddress.split("/")[0])));
-
-                    pdu.add(new VariableBinding(new OID(trapOid), new OctetString(message)));
-                    pdu.setType(PDU.NOTIFICATION);
-
-                    // Send the PDU
-                    LogUtil.info("Sending SNMP Trap messages. (" + i + "/" + dataCount + ")");
-                    snmp.send(pdu, cTarget);
-                }
+                // Send the PDU
+                Snmp snmp = new Snmp(transport);
+                snmp.send(pdu, cTarget);
+                snmp.close();
             }
-
-            snmp.close();
-        } catch (Exception e) {
-            LogUtil.error(e.toString());
         }
     }
 
-    public void run() {
-        boolean work = true;
-
-        try {
-            transport = new DefaultUdpTransportMapping();
-            transport.listen();
-
-            while (work) {
-                Thread.sleep(3000);
-                sendMsg();
-            }
-        } catch (Exception e) {
-            LogUtil.error(e.toString());
-        }
-    }
-
-    public void addTrapMsg(String level, String message) {
+    public void addMessage(String level, String message) {
         Map<String, String> data = new HashMap<String, String>();
         data.put("level", level);
         data.put("message", message);
-
         queue.add(data);
     }
 
+    public void run() {
+        try {
+            sendAll();
+        } catch (Exception e) {
+            LogUtil.error(e.toString());
+        } finally {
+            queue = null;
+            properties = null;
+        }
+    }
+
+    public static void main(String[] args) {
+        TrapSender trap = new TrapSender(SNMPConfig.getProperties());
+        trap.addMessage("FATAL", "a");
+        trap.addMessage("FATAL", "b");
+        trap.addMessage("FATAL", "c");
+        trap.addMessage("WARNING", "d");
+        trap.start();
+    }
 }

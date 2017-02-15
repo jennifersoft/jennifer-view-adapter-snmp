@@ -35,7 +35,7 @@ public class SNMPConfig {
 		return properties.getProperty(key);
 	}
 	
-	public static SNMPProp getLog() {
+	public static SNMPProp getProperties() {
 		String pattern = getValue("snmp.pattern");
 		String date_format = getValue("snmp.date_format");
 		String trap_oid_fatal = getValue("snmp.trap_oid_fatal");
@@ -47,9 +47,9 @@ public class SNMPConfig {
 		SNMPProp log = new SNMPProp();
 		log.setPattern(pattern != null ? pattern : "[%time] domain=%domainName(%domainId), instance=%instanceName(%instanceId), level=%eventLevel, name=%eventName, value=%value");
 		log.setDateFormat(date_format != null ? date_format : "yyyy-MM-dd HH:mm:ss");
-		log.setTrapOidFatal(trap_oid_fatal != null ? trap_oid_fatal : null);
-		log.setTrapOidWarning(trap_oid_warning != null ? trap_oid_warning : null);
-		log.setTrapOidNormal(trap_oid_normal != null ? trap_oid_normal : null);
+		log.setTrapOidFatal(trap_oid_fatal != null ? trap_oid_fatal : "1.3.6.1.4.1.27767.1.1");
+		log.setTrapOidWarning(trap_oid_warning != null ? trap_oid_warning : "1.3.6.1.4.1.27767.1.1");
+		log.setTrapOidNormal(trap_oid_normal != null ? trap_oid_normal : "1.3.6.1.4.1.27767.1.1");
 		log.setTrapTargetCommunity(trap_target_community != null ? trap_target_community : "public");
 		log.setTrapTargetAddress(trap_target_address != null ? trap_target_address : "127.0.0.1/162");
 

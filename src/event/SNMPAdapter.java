@@ -13,10 +13,11 @@ import java.text.SimpleDateFormat;
 public class SNMPAdapter implements JenniferAdapter {
 	public void on(JenniferModel[] message) {
 		LogUtil.info(message.length + " events are transmitted.");
-		SNMPProp prop = SNMPConfig.getLog();
+		SNMPProp prop = SNMPConfig.getProperties();
 
 		try {
 			SimpleDateFormat sdf = new SimpleDateFormat(prop.getDateFormat());
+			TrapSender trap = new TrapSender(prop);
 
 			for(int i = 0; i < message.length; i++) {
 				JenniferEvent model = (JenniferEvent) message[i];
@@ -39,8 +40,10 @@ public class SNMPAdapter implements JenniferAdapter {
 				pattern = pattern.replaceFirst("%message", "" + messageFormat);
 				pattern = pattern.replaceFirst("%detailMessage", "" + model.getDetailMessage());
 
-				TrapSender.getInstance().addTrapMsg(model.getEventLevel(), pattern);
+				trap.addMessage(model.getEventLevel(), pattern);
 			}
+
+			trap.start();
 		} catch (Exception e) {
 			LogUtil.error(e.toString());
 		}
