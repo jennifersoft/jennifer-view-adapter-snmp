@@ -43,11 +43,11 @@ public class TrapSender extends Thread {
 
     public void sendMsg() throws InterruptedException {
         SNMPProp prop = SNMPConfig.getLog();
-
         Vector v = queue;
         queue = new Vector();
 
         String snmpTrapTargetAddress = prop.getTrapTargetAddress();
+        String community = prop.getTrapTargetCommunity();
 
         if (snmpTrapTargetAddress == null) {
             if (System.currentTimeMillis() - startTime > 10000) {
@@ -57,11 +57,8 @@ public class TrapSender extends Thread {
             return;
         }
 
-        String community = prop.getTrapTargetCommunity();
-
         // Create Transport Mapping
         try {
-
             // Create Target
             CommunityTarget cTarget = new CommunityTarget();
             cTarget.setCommunity(new OctetString(community));
@@ -69,12 +66,10 @@ public class TrapSender extends Thread {
             cTarget.setAddress(new UdpAddress(snmpTrapTargetAddress));
             cTarget.setRetries(0);
             cTarget.setTimeout(5000);
-
             Snmp snmp = new Snmp(transport);
 
-            // Create PDU for V2
+            // Create PDU for
             int dataCount = v.size();
-
             for (int i = 0; i < dataCount; i++) {
                 PDU pdu = new PDU();
                 Map<String, String> obj = (Map<String, String>) v.get(i);
@@ -104,16 +99,14 @@ public class TrapSender extends Thread {
                     pdu.setType(PDU.NOTIFICATION);
 
                     // Send the PDU
-                    ResponseEvent res = snmp.send(pdu, cTarget);
-
-                    // Logging event messages
-                    LogUtil.info(res.toString() + " (" + i + "/" + dataCount + ")");
+                    LogUtil.info("Sending SNMP Trap messages. (" + i + "/" + dataCount + ")");
+                    snmp.send(pdu, cTarget);
                 }
             }
-            snmp.close();
 
-        } catch (IOException e) {
-            LogUtil.error(e.getMessage());
+            snmp.close();
+        } catch (Exception e) {
+            LogUtil.error(e.toString());
         }
     }
 
@@ -129,7 +122,7 @@ public class TrapSender extends Thread {
                 sendMsg();
             }
         } catch (Exception e) {
-            LogUtil.error(e.getMessage());
+            LogUtil.error(e.toString());
         }
     }
 
