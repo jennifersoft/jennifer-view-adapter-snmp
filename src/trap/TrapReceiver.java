@@ -27,7 +27,11 @@ public class TrapReceiver implements CommandResponder {
     public static void main(String[] args) {
         TrapReceiver snmp4jTrapReceiver = new TrapReceiver();
         try {
-            snmp4jTrapReceiver.listen(new UdpAddress("127.0.0.1/162"));
+            if(args.length == 1) {
+                snmp4jTrapReceiver.listen(new UdpAddress(args[0]));
+            } else {
+                snmp4jTrapReceiver.listen(new UdpAddress("127.0.0.1/162"));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
