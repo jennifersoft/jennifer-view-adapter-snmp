@@ -5,6 +5,7 @@ import com.jennifersoft.view.adapter.JenniferModel;
 import com.jennifersoft.view.adapter.model.JenniferEvent;
 import com.jennifersoft.view.adapter.util.LogUtil;
 import prop.SNMPProp;
+import trap.SnmpTrapV2cSender;
 import trap.TrapSender;
 import util.SNMPConfig;
 
@@ -14,10 +15,10 @@ public class SNMPAdapter implements JenniferAdapter {
 	public void on(JenniferModel[] message) {
 		LogUtil.info(message.length + " events are transmitted.");
 		SNMPProp prop = SNMPConfig.getProperties();
+		SnmpTrapV2cSender sender = new SnmpTrapV2cSender(prop);
 
 		try {
 			SimpleDateFormat sdf = new SimpleDateFormat(prop.getDateFormat());
-			TrapSender trap = new TrapSender(prop);
 
 			for(int i = 0; i < message.length; i++) {
 				JenniferEvent model = (JenniferEvent) message[i];
@@ -40,10 +41,10 @@ public class SNMPAdapter implements JenniferAdapter {
 				pattern = pattern.replaceFirst("%message", "" + messageFormat);
 				pattern = pattern.replaceFirst("%detailMessage", "" + model.getDetailMessage());
 
-				trap.addMessage(model.getEventLevel(), pattern);
+				sender.addTrapMsg(pattern, model.getEventLevel());
 			}
 
-			trap.start();
+			sender.start();
 		} catch (Exception e) {
 			LogUtil.error(e.toString());
 		}
