@@ -78,6 +78,10 @@ public class SnmpTrapV2cSender extends Thread {
 		while(!queue.isEmpty()) {
 			try {
 				SNMPv2TrapPDU pdu = this.queue.poll();
+
+				// Logging trapOid
+				LogUtil.info("Sending SNMP Trap OID (" + pdu.getSNMPTrapOID() + ")");
+
 				String community = prop.getTrapTargetCommunity();
 				String targetAddress = prop.getTrapTargetAddress();
 				InetAddress hostAddress = InetAddress.getByName(targetAddress);
