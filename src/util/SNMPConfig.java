@@ -1,58 +1,27 @@
 package util;
 
-import com.jennifersoft.view.adapter.util.LogUtil;
-import com.jennifersoft.view.config.ConfigValue;
 import prop.SNMPProp;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
+import com.jennifersoft.view.extension.util.PropertyUtil;
 
 public class SNMPConfig {
-	private static Properties properties = null;
+	static final SNMPProp prop = new SNMPProp();
+	static final String PATTERN = "[%time] domain=%domainName(%domainId), instance=%instanceName(%instanceId), level=%eventLevel, name=%eventName, value=%value";
+	static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	static final String TRAP_OID_FATAL = "1.3.6.1.4.1.27767.1.1";
+	static final String TRAP_OID_WARNING = "1.3.6.1.4.1.27767.1.1";
+	static final String TRAP_OID_NORMAL = "1.3.6.1.4.1.27767.1.1";
+	static final String TRAP_TARGET_COMMUNITY = "public";
+	static final String TRAP_TARGET_ADDRESS = "127.0.0.1/162";
 
-	public static void loadConfig() {
-		properties = new Properties();
-		
-		FileInputStream file = null;
-		String path = ConfigValue.adapter_config_path;
-		
-		try {
-			if(path != null) {
-				file = new FileInputStream(path);
-				properties.load(file);
-			}
-		} catch (IOException e) {
-			LogUtil.error(e.toString());
-		}
-	}
-	
-	public static String getValue(String key) {
-		if(properties == null) {
-			loadConfig();
-		}
-		
-		return properties.getProperty(key);
-	}
-	
 	public static SNMPProp getProperties() {
-		String pattern = getValue("snmp.pattern");
-		String date_format = getValue("snmp.date_format");
-		String trap_oid_fatal = getValue("snmp.trap_oid_fatal");
-		String trap_oid_warning = getValue("snmp.trap_oid_warning");
-		String trap_oid_normal = getValue("snmp.trap_oid_normal");
-		String trap_target_community = getValue("snmp.trap_target_community");
-		String trap_target_address = getValue("snmp.trap_target_address");
+		prop.setPattern(PropertyUtil.getValue("snmp", "pattern", PATTERN));
+		prop.setDateFormat(PropertyUtil.getValue("snmp", "date_format", DATE_FORMAT));
+		prop.setTrapOidFatal(PropertyUtil.getValue("snmp", "trap_oid_fatal", TRAP_OID_FATAL));
+		prop.setTrapOidWarning(PropertyUtil.getValue("snmp", "trap_oid_warning", TRAP_OID_WARNING));
+		prop.setTrapOidNormal(PropertyUtil.getValue("snmp", "trap_oid_normal", TRAP_OID_NORMAL));
+		prop.setTrapTargetCommunity(PropertyUtil.getValue("snmp", "trap_target_community", TRAP_TARGET_COMMUNITY));
+		prop.setTrapTargetAddress(PropertyUtil.getValue("snmp", "trap_target_address", TRAP_TARGET_ADDRESS));
 
-		SNMPProp log = new SNMPProp();
-		log.setPattern(pattern != null ? pattern : "[%time] domain=%domainName(%domainId), instance=%instanceName(%instanceId), level=%eventLevel, name=%eventName, value=%value");
-		log.setDateFormat(date_format != null ? date_format : "yyyy-MM-dd HH:mm:ss");
-		log.setTrapOidFatal(trap_oid_fatal != null ? trap_oid_fatal : "1.3.6.1.4.1.27767.1.1");
-		log.setTrapOidWarning(trap_oid_warning != null ? trap_oid_warning : "1.3.6.1.4.1.27767.1.1");
-		log.setTrapOidNormal(trap_oid_normal != null ? trap_oid_normal : "1.3.6.1.4.1.27767.1.1");
-		log.setTrapTargetCommunity(trap_target_community != null ? trap_target_community : "public");
-		log.setTrapTargetAddress(trap_target_address != null ? trap_target_address : "127.0.0.1/162");
-
-		return log;
+		return prop;
 	}
 }
