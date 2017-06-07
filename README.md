@@ -1,3 +1,8 @@
+## Important Notices
+
+It is available from Jennifer Server version 5.2.3. If you want to use the old method, use the 'old' branch.
+
+
 ## Getting started
 
 Execute the following in the Jennifer management screen.
